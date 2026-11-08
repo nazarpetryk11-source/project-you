@@ -1,0 +1,19 @@
+{
+  "name": "PROJECT YOU — SYSTEM",
+  "short_name": "PROJECT YOU",
+  "description": "Твоя система розвитку в реальному житті.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#070b16",
+  "theme_color": "#070b16",
+  "orientation": "portrait",
+  "lang": "uk",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
