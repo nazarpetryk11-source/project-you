@@ -1,55 +1,67 @@
-const KEY = "project-you-save-v1";
-const initial = {
-  xp: 0, gold: 0,
-  stats: [
-    {id:"strength",name:"STRENGTH",desc:"Сила, витривалість, тіло",xp:0},
-    {id:"intelligence",name:"INTELLIGENCE",desc:"Знання та мислення",xp:0},
-    {id:"discipline",name:"DISCIPLINE",desc:"Самоконтроль і сталість",xp:0},
-    {id:"career",name:"CAREER",desc:"Професія та дохід",xp:0},
-    {id:"charisma",name:"CHARISMA",desc:"Комунікація та впевненість",xp:0},
-    {id:"survival",name:"SURVIVAL",desc:"Побут і самостійність",xp:0},
-    {id:"creativity",name:"CREATIVITY",desc:"Ідеї та створення",xp:0}
-  ],
-  quests: [
-    {id:1,title:"Рухайся 20 хвилин",category:"Тіло • Щоденне",reward:20,stat:"strength",done:false},
-    {id:2,title:"Навчайся 30 хвилин",category:"Розум • Щоденне",reward:25,stat:"intelligence",done:false},
-    {id:3,title:"Виконай одну важливу справу",category:"Дисципліна • Щоденне",reward:20,stat:"discipline",done:false}
-  ],
-  log:[]
-};
+const STORE = "project-you-save-v2";
+const ATTRS = [
+  ["STRENGTH","Сила та фізична форма","STR"],
+  ["INTELLIGENCE","Знання та навчання","INT"],
+  ["DISCIPLINE","Самоконтроль і сталість","DIS"],
+  ["CAREER","Професія та дохід","CAR"],
+  ["CHARISMA","Комунікація та впевненість","CHA"],
+  ["SURVIVAL","Самостійність і побут","SUR"],
+  ["CREATIVITY","Ідеї та створення","CRE"]
+];
+const DEFAULT_QUESTS = [
+  {id:"q1",title:"Виконати фізичне тренування",category:"STRENGTH",xp:40,gold:20,kind:"DAILY",done:false},
+  {id:"q2",title:"Навчатися або практикувати навичку 30 хв",category:"INTELLIGENCE",xp:25,gold:10,kind:"DAILY",done:false},
+  {id:"q3",title:"Виконати одну важливу справу без відкладання",category:"DISCIPLINE",xp:20,gold:10,kind:"DAILY",done:false},
+  {id:"q4",title:"Зробити крок до власного доходу",category:"CAREER",xp:35,gold:15,kind:"WEEKLY",done:false}
+];
+const SKILLS = [
+  {id:"s1",icon:"⚔",name:"PHYSICAL POWER",desc:"Розвивай силу, витривалість і контроль тіла.",attr:"STRENGTH",need:0},
+  {id:"s2",icon:"◉",name:"FOCUS CORE",desc:"Тренуй концентрацію та глибоку роботу.",attr:"DISCIPLINE",need:0},
+  {id:"s3",icon:"⌘",name:"KNOWLEDGE",desc:"Відкривай нові знання та інтелектуальні навички.",attr:"INTELLIGENCE",need:50},
+  {id:"s4",icon:"◇",name:"SOCIAL INSTINCT",desc:"Комунікація, переговори та впевненість.",attr:"CHARISMA",need:50},
+  {id:"s5",icon:"↗",name:"BUILDER",desc:"Створюй проєкти та формуй джерела доходу.",attr:"CAREER",need:100},
+  {id:"s6",icon:"✧",name:"CREATOR",desc:"Перетворюй ідеї на завершені результати.",attr:"CREATIVITY",need:100}
+];
+const fresh = () => ({name:"PLAYER",xp:0,gold:0,level:1,attr:Object.fromEntries(ATTRS.map(a=>[a[0],0])),quests:DEFAULT_QUESTS.map(q=>({...q})),unlocked:[],log:[{text:"SYSTEM initialized. Welcome, Player.",time:Date.now()}],completedToday:0,lastCompleteDate:""});
 let state;
-try { state = JSON.parse(localStorage.getItem(KEY)) || structuredClone(initial); } catch(e) { state = structuredClone(initial); }
-const $ = id => document.getElementById(id);
-const levelFor = xp => { let level=1, remaining=xp, need=500; while(remaining>=need){remaining-=need;level++;need=500+(level-1)*100;} return {level,remaining,need}; };
-function save(){localStorage.setItem(KEY,JSON.stringify(state));}
-function log(message){state.log.unshift({message,time:new Date().toLocaleTimeString("uk-UA",{hour:"2-digit",minute:"2-digit"})});state.log=state.log.slice(0,6);}
+try { state = JSON.parse(localStorage.getItem(STORE)) || fresh(); } catch { state=fresh(); }
+function save(){localStorage.setItem(STORE,JSON.stringify(state));}
+function needXP(level){return 500+(level-1)*100;}
+function rankFor(level){if(level>=100)return"SSS";if(level>=75)return"SS";if(level>=50)return"S";if(level>=30)return"A";if(level>=20)return"B";if(level>=10)return"C";if(level>=5)return"D";return"E";}
+function addLog(text){state.log.unshift({text,time:Date.now()});state.log=state.log.slice(0,30);}
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2300);}
 function render(){
-  const l=levelFor(state.xp);
-  $("level").textContent=l.level;$("xpText").textContent=`${l.remaining} / ${l.need} XP`;$("totalXp").textContent=state.xp;$("gold").textContent=state.gold;
-  $("xpBar").style.width=`${Math.min(100,l.remaining/l.need*100)}%`;
-  $("statsGrid").innerHTML=state.stats.map(s=>{const sl=levelFor(s.xp);return `<article class="stat-card"><div class="stat-head"><span class="stat-name">${s.name}</span><span class="stat-level">LVL ${sl.level}</span></div><div class="stat-desc">${s.desc}</div><div class="mini-track"><div class="mini-fill" style="width:${Math.min(100,sl.remaining/sl.need*100)}%"></div></div><div class="stat-xp">${s.xp} XP</div></article>`}).join("");
-  $("questList").innerHTML=state.quests.length?state.quests.map(q=>`<div class="quest ${q.done?"done":""}"><button class="quest-check" data-complete="${q.id}" aria-label="Позначити виконаним">${q.done?"✓":""}</button><div class="quest-main"><div class="quest-name">${escapeHtml(q.title)}</div><div class="quest-meta">${escapeHtml(q.category)}</div></div><div class="quest-reward">+${q.reward} XP</div></div>`).join(""):`<div class="empty">Активних завдань немає. Додай перший квест.</div>`;
-  $("activityLog").innerHTML=state.log.length?state.log.map(x=>`<div class="log-entry"><b>${x.time}</b>　${escapeHtml(x.message)}</div>`).join(""):`<div class="empty">Система очікує на твою першу дію.</div>`;
+  document.getElementById("playerName").textContent=state.name||"PLAYER";
+  document.getElementById("avatarInitial").textContent=(state.name||"P").trim().charAt(0).toUpperCase();
+  document.getElementById("level").textContent=state.level;
+  document.getElementById("rank").textContent="RANK "+rankFor(state.level);
+  document.getElementById("totalXp").textContent=state.xp.toLocaleString("uk-UA");
+  document.getElementById("gold").textContent=state.gold.toLocaleString("uk-UA");
+  document.getElementById("streak").textContent=state.completedToday+" TODAY";
+  const need=needXP(state.level), current=state.xp, pct=Math.min(100,Math.round(current/need*100));
+  document.getElementById("xpText").textContent=`${current} / ${need} XP`;
+  document.getElementById("xpPercent").textContent=pct+"%";
+  document.getElementById("xpBar").style.width=pct+"%";
+  document.getElementById("attributes").innerHTML=ATTRS.map(([name,desc])=>{let v=state.attr[name]||0;return `<article class="attribute"><div class="attribute-top"><span class="attribute-name">${name}</span><span class="attribute-value">${v} XP</span></div><div class="attribute-desc">${desc}</div><div class="mini-progress"><span style="width:${Math.min(100,v%100)}%"></span></div></article>`}).join("");
+  const active=state.quests.filter(q=>!q.done);
+  document.getElementById("questList").innerHTML=active.length?active.slice(0,4).map(q=>`<article class="quest" data-id="${q.id}"><div><div class="quest-title">${escapeHTML(q.title)}</div><div class="quest-meta">${q.kind} · ${q.category}</div><div class="quest-reward">+${q.xp} XP <b>+${q.gold} GOLD</b></div></div><button class="complete-btn" data-complete="${q.id}">COMPLETE</button></article>`).join(""):`<div class="panel" style="padding:18px;text-align:center;color:#8ba7c2;font-size:12px">Усі активні квести виконано. Створи новий виклик.</div>`;
+  document.getElementById("skillGrid").innerHTML=SKILLS.map(s=>{let unlocked=state.unlocked.includes(s.id),v=state.attr[s.attr]||0,can=v>=s.need;return `<article class="skill ${unlocked?"":"locked"}"><div class="skill-icon">${s.icon}</div><div class="skill-name">${s.name}</div><div class="skill-desc">${s.desc}</div><div class="skill-foot"><span>${unlocked?"UNLOCKED":`REQUIRES ${s.need} ${s.attr} XP`}</span>${unlocked?'<span>✓ ACTIVE</span>':can?`<button class="skill-action" data-unlock="${s.id}">UNLOCK →</button>`:"LOCKED"}</div></article>`}).join("");
+  document.getElementById("logList").innerHTML=state.log.slice(0,3).map(logHTML).join("")||emptyLog();
+  document.getElementById("fullLog").innerHTML=state.log.map(logHTML).join("")||emptyLog();
   save();
 }
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-$("questList").addEventListener("click",e=>{
- const btn=e.target.closest("[data-complete]");if(!btn)return;
- const q=state.quests.find(x=>x.id===Number(btn.dataset.complete));if(!q||q.done)return;
- q.done=true;state.xp+=q.reward;state.gold+=Math.max(5,Math.round(q.reward/2));
- const stat=state.stats.find(s=>s.id===q.stat)||state.stats.find(s=>s.id==="discipline");if(stat)stat.xp+=q.reward;
- log(`Квест завершено: ${q.title} <b>+${q.reward} XP</b> та GOLD отримано.`);
- render();
+function logHTML(item){return `<div class="log-entry"><span class="log-mark">›</span><span>${escapeHTML(item.text)}</span><span class="log-time">${new Date(item.time).toLocaleTimeString("uk-UA",{hour:"2-digit",minute:"2-digit"})}</span></div>`;}
+function emptyLog(){return '<div class="log-entry">No activity recorded.</div>';}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function completeQuest(id){const q=state.quests.find(x=>x.id===id);if(!q||q.done)return;q.done=true;state.xp+=Number(q.xp);state.gold+=Number(q.gold);state.attr[q.category]=(state.attr[q.category]||0)+Number(q.xp);const today=new Date().toISOString().slice(0,10);if(state.lastCompleteDate!==today){state.completedToday=0;state.lastCompleteDate=today;}state.completedToday++;let leveled=false;while(state.xp>=needXP(state.level)){state.xp-=needXP(state.level);state.level++;leveled=true;}addLog(`Quest completed: ${q.title} · +${q.xp} XP · +${q.gold} GOLD`);if(leveled)addLog(`LEVEL UP! You reached level ${state.level}.`);render();toast(leveled?`LEVEL UP — LEVEL ${state.level}`:`QUEST COMPLETE  +${q.xp} XP`);}
+document.addEventListener("click",e=>{
+ const complete=e.target.closest("[data-complete]");if(complete){completeQuest(complete.dataset.complete);return;}
+ const unlock=e.target.closest("[data-unlock]");if(unlock){const s=SKILLS.find(x=>x.id===unlock.dataset.unlock);if(s&&!state.unlocked.includes(s.id)&&(state.attr[s.attr]||0)>=s.need){state.unlocked.push(s.id);addLog(`Skill unlocked: ${s.name}`);render();toast("NEW SKILL UNLOCKED");}return;}
 });
-$("addQuestBtn").addEventListener("click",()=>{
- const title=prompt("Назва нового квесту:");if(!title||!title.trim())return;
- const rewardRaw=prompt("Нагорода XP (від 5 до 100):","20");const reward=Math.max(5,Math.min(100,Number(rewardRaw)||20));
- const categories=["strength","intelligence","discipline","career","charisma","survival","creativity"];
- const choice=prompt("Характеристика: 1 Сила, 2 Інтелект, 3 Дисципліна, 4 Кар'єра, 5 Харизма, 6 Самостійність, 7 Творчість","3");
- const idx=Math.max(0,Math.min(6,(Number(choice)||3)-1));const labels=["Тіло","Розум","Дисципліна","Кар'єра","Комунікація","Самостійність","Творчість"];
- state.quests.push({id:Date.now(),title:title.trim(),category:labels[idx]+" • Особисте",reward,stat:categories[idx],done:false});
- log(`Додано новий квест: ${title.trim()}`);render();
-});
-$("resetBtn").addEventListener("click",()=>{if(confirm("Скинути весь прогрес на цьому пристрої? Це не можна скасувати.")){state=structuredClone(initial);render();}});
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}
+document.getElementById("addQuestBtn").addEventListener("click",()=>document.getElementById("questDialog").showModal());
+document.getElementById("questForm").addEventListener("submit",e=>{e.preventDefault();const title=document.getElementById("questTitle").value.trim();if(!title)return;state.quests.push({id:"q"+Date.now(),title,category:document.getElementById("questCategory").value,xp:Math.max(5,Math.min(500,Number(document.getElementById("questXP").value)||25)),gold:Math.max(0,Math.min(300,Number(document.getElementById("questGold").value)||0)),kind:"CUSTOM",done:false});addLog(`New quest created: ${title}`);document.getElementById("questDialog").close();e.target.reset();render();toast("QUEST ADDED TO SYSTEM");});
+document.getElementById("systemBtn").addEventListener("click",()=>document.getElementById("logDialog").showModal());
+document.getElementById("allQuestsBtn").addEventListener("click",()=>{const done=state.quests.filter(q=>q.done);toast(`${state.quests.length-done.length} ACTIVE · ${done.length} COMPLETED`);});
+document.querySelectorAll(".nav-item").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));btn.classList.add("active");const id=btn.dataset.target;if(id==="top")window.scrollTo({top:0,behavior:"smooth"});else document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"});}));
+if("serviceWorker" in navigator && location.protocol.startsWith("http"))window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 render();

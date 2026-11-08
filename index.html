@@ -3,55 +3,79 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#070b16">
-  <meta name="description" content="PROJECT YOU — твоя система розвитку в реальному житті.">
+  <meta name="theme-color" content="#050a14">
+  <meta name="description" content="PROJECT YOU — Personal Leveling System">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
   <title>PROJECT YOU — SYSTEM</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">PY</span><div><div class="brand-name">PROJECT YOU</div><div class="brand-sub">PERSONAL DEVELOPMENT SYSTEM</div></div></div>
-    <div class="system-status"><span class="pulse"></span> SYSTEM ONLINE</div>
+    <div class="brand"><div class="brand-mark">PY</div><div><div class="brand-name">PROJECT YOU</div><div class="brand-sub">PERSONAL LEVELING SYSTEM</div></div></div>
+    <button class="icon-btn" id="systemBtn" aria-label="System log">⌁</button>
   </header>
 
-  <main class="shell">
-    <section class="welcome">
-      <div class="eyebrow">ПЕРСОНАЛЬНИЙ ІНТЕРФЕЙС</div>
-      <h1>Вітаю, <span>Гравцю.</span></h1>
-      <p>Кожен день — можливість стати сильнішою версією себе.</p>
+  <main class="app-shell">
+    <section class="system-banner">
+      <div class="eyebrow"><span class="pulse"></span> SYSTEM ONLINE <span class="version">BUILD 0.2.0</span></div>
+      <div class="banner-title">YOUR STORY<br><span>STARTS NOW.</span></div>
+      <p class="banner-copy">Кожна дія наближає тебе до наступного рівня.</p>
     </section>
 
     <section class="player-card panel">
-      <div class="player-top">
-        <div><div class="eyebrow">PLAYER PROFILE</div><div class="player-title">НЕЗАЛЕЖНИЙ ГРАВЕЦЬ</div></div>
-        <div class="rank">E-RANK</div>
+      <div class="section-head"><span>PLAYER STATUS</span><span class="rank-chip" id="rank">RANK E</span></div>
+      <div class="player-main">
+        <div class="avatar"><span id="avatarInitial">P</span><i></i></div>
+        <div class="player-info"><div class="player-name" id="playerName">PLAYER</div><div class="player-level">LEVEL <strong id="level">1</strong></div><div class="xp-caption"><span id="xpText">0 / 500 XP</span><span id="xpPercent">0%</span></div><div class="progress"><span id="xpBar"></span></div></div>
       </div>
-      <div class="level-line"><div><span class="muted">РІВЕНЬ</span><div class="level-number" id="level">1</div></div><div class="xp-info"><strong id="xpText">0 / 500 XP</strong><span class="muted">ДО НАСТУПНОГО РІВНЯ</span></div></div>
-      <div class="progress-track"><div class="progress-fill" id="xpBar"></div></div>
-      <div class="player-bottom"><span>⚡ <b id="totalXp">0</b> загального XP</span><span>◈ <b id="gold">0</b> GOLD</span></div>
+      <div class="resource-row"><div class="resource"><span class="resource-icon">✦</span><div><small>TOTAL XP</small><strong id="totalXp">0</strong></div></div><div class="resource"><span class="resource-icon gold">◈</span><div><small>GOLD</small><strong id="gold">0</strong></div></div><div class="resource"><span class="resource-icon">⚡</span><div><small>STREAK</small><strong id="streak">0 DAYS</strong></div></div></div>
     </section>
 
-    <section class="section-head"><div><div class="eyebrow">CORE PARAMETERS</div><h2>Характеристики</h2></div><span class="small-tag">01 / 07</span></section>
-    <section class="stats-grid" id="statsGrid"></section>
+    <section class="section-block">
+      <div class="section-head"><span>ATTRIBUTES</span><span class="muted">CORE STATS · 7</span></div>
+      <div class="attribute-grid" id="attributes"></div>
+    </section>
 
-    <section class="section-head quests-head"><div><div class="eyebrow">ACTIVE MISSIONS</div><h2>Завдання</h2></div><button class="outline-btn" id="addQuestBtn">＋ Додати</button></section>
-    <section class="quest-list panel" id="questList"></section>
+    <section class="section-block">
+      <div class="section-head"><span>ACTIVE QUESTS</span><button class="text-btn" id="addQuestBtn">＋ NEW QUEST</button></div>
+      <div class="quest-list" id="questList"></div>
+      <button class="wide-ghost" id="allQuestsBtn">VIEW ALL QUESTS <span>→</span></button>
+    </section>
 
-    <section class="section-head"><div><div class="eyebrow">SYSTEM LOG</div><h2>Останні події</h2></div></section>
-    <section class="log panel" id="activityLog"><div class="empty">Система очікує на твою першу дію.</div></section>
+    <section class="section-block">
+      <div class="section-head"><span>SKILL TREE</span><span class="muted">AWAKEN YOUR POTENTIAL</span></div>
+      <div class="skill-grid" id="skillGrid"></div>
+    </section>
 
-    <footer>PROJECT YOU <span>•</span> BUILD 0.1.0 <span>•</span> YOUR LIFE. YOUR LEVEL.</footer>
+    <section class="section-block">
+      <div class="section-head"><span>SYSTEM LOG</span><span class="muted">LATEST ACTIVITY</span></div>
+      <div class="log-list panel" id="logList"></div>
+    </section>
   </main>
 
   <nav class="bottom-nav">
-    <a class="active" href="#top"><span>⌂</span>Головна</a>
-    <a href="#statsGrid"><span>◈</span>Стати</a>
-    <a href="#questList"><span>⚔</span>Квести</a>
-    <button id="resetBtn"><span>↻</span>Скинути</button>
+    <button class="nav-item active" data-target="top"><span>⌂</span>HOME</button>
+    <button class="nav-item" data-target="attributes"><span>◈</span>STATS</button>
+    <button class="nav-item" data-target="questList"><span>⚔</span>QUESTS</button>
+    <button class="nav-item" data-target="skillGrid"><span>✧</span>SKILLS</button>
   </nav>
-  <script src="app.js"></script>
+
+  <dialog id="questDialog" class="modal">
+    <form method="dialog" id="questForm">
+      <div class="modal-head"><div><div class="eyebrow">SYSTEM REQUEST</div><h2>CREATE QUEST</h2></div><button class="icon-btn close-btn" value="cancel">×</button></div>
+      <label>Quest title<input id="questTitle" maxlength="54" placeholder="Наприклад: 30 хвилин навчання" required></label>
+      <label>Category<select id="questCategory"><option value="DISCIPLINE">DISCIPLINE</option><option value="STRENGTH">STRENGTH</option><option value="INTELLIGENCE">INTELLIGENCE</option><option value="CAREER">CAREER</option><option value="CHARISMA">CHARISMA</option><option value="SURVIVAL">SURVIVAL</option><option value="CREATIVITY">CREATIVITY</option></select></label>
+      <div class="form-row"><label>Reward XP<input id="questXP" type="number" min="5" max="500" value="25"></label><label>Reward GOLD<input id="questGold" type="number" min="0" max="300" value="10"></label></div>
+      <button class="primary-btn" value="default">ADD TO QUEST LIST</button>
+    </form>
+  </dialog>
+
+  <dialog id="logDialog" class="modal">
+    <form method="dialog"><div class="modal-head"><div><div class="eyebrow">SYSTEM NOTIFICATIONS</div><h2>SYSTEM LOG</h2></div><button class="icon-btn" value="cancel">×</button></div><div id="fullLog" class="log-list"></div><button class="wide-ghost" value="cancel">CLOSE</button></form>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="./app.js"></script>
 </body>
 </html>
